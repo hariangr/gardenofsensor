@@ -19,7 +19,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/update', function (Request $request) {
+Route::get('/update', function (Request $request) {
     $newData = new TimeSeries([
         "field1" => $request['field1'],
         "field2" => $request['field2'],
