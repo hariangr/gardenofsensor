@@ -1,5 +1,6 @@
 LimitRequestBody 104857600
 
+
 RewriteEngine on
 RewriteCond %{REQUEST_URI} !^public
 RewriteRule ^(.*)$ public/$1 [L]
