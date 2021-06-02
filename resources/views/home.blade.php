@@ -12,6 +12,8 @@
 
     <script src="/moment-with-locales.js"></script>
 
+    <script src="/js/app.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js"
         integrity="sha512-VCHVc5miKoln972iJPvkQrUYYq7XpxXzvqNfiul1H4aZDwGBGC0lq373KNleaB2LpnC2a/iNfE5zoRYmB4TRDQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -40,50 +42,91 @@
 
         <div class="mt-8 flex-grow w-full h-50 bg-white dark:bg-gray-800 overflow-hidden shadow sm:rounded-lg p-4 m-16">
             <canvas id="myChart"></canvas>
+
+            <i class="text-center justify-center flex mt-8">Akan diperbarui dalam&nbsp;<b
+                    id="timerLeft"></b>&nbsp;detik</i>
         </div>
     </div>
 </body>
 
 <script>
     var ctx = document.getElementById('myChart').getContext('2d');
-
-    const localDatesLabels = [];
+    const timerLeftEl = document.getElementById("timerLeft");
 
     moment.locale('id');
 
-    {!! $labels !!}.forEach(it => {
-        localDatesLabels.push(new moment(it).local())
-    });
+    let rawData = [];
 
-    var myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: localDatesLabels,
-            datasets: [{
-                    label: 'Suhu',
-                    data: {!! $fields1 !!},
-                    borderColor: "#ff0000",
-                },
-                {
-                    label: 'Kelembapan',
-                    data: {!! $fields2 !!},
-                    borderColor: "#00ff00",
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Grafik Temperatur dan Kelembapan'
+    async function reloadData() {
+        const feeds = await axios.get("/api/getdata");
+        rawData = feeds['data'];
+        updateChart();
+    }
+
+    let myChart;
+
+    function updateChart() {
+        const localDatesLabels = [];
+
+        let fields1 = []
+        let fields2 = []
+
+        rawData.forEach((it) => {
+            localDatesLabels.push(new moment(it['created_at']).local().format('Do MMMM YY, k:mm'));
+            fields1.push(it['field1']);
+            fields2.push(it['field2']);
+        });
+
+        if (myChart != null) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: localDatesLabels,
+                datasets: [{
+                        label: 'Suhu (Celcius)',
+                        data: fields1,
+                        borderColor: "#ff0000",
+                    },
+                    {
+                        label: 'Kelembapan (%)',
+                        data: fields2,
+                        borderColor: "#00ff00",
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Grafik Temperatur dan Kelembapan'
+                    }
                 }
             }
+        });
+    }
+    reloadData();
+
+    let lastReload = new Date();
+    setInterval(function() {
+        const now = new Date();
+
+        timerLeftEl.innerText = Math.round((30000 - (now - lastReload)) / 1000);
+
+        if (now - lastReload > 30000) {
+            // Update data setiap 30 detik
+            console.log("won't update?");
+
+            reloadData();
+            lastReload = now;
         }
-    });
+    }, 1000);
 
 </script>
 
